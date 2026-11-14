@@ -236,7 +236,12 @@ footer { border-top: 1px solid var(--rule); padding: 40px 0 56px; font-size: 14p
 dialog.dl { border: none; border-radius: 18px; padding: 0; width: min(460px, calc(100vw - 32px)); background: var(--card); color: var(--ink);
   box-shadow: 0 40px 90px -30px rgba(0,0,0,.6); }
 dialog.dl::backdrop { background: rgba(10, 18, 24, .55); }
-.dl-in { padding: 26px 26px 22px; display: grid; gap: 12px; }
+.dl-in { padding: 26px 26px 22px; display: grid; gap: 12px; position: relative; }
+.dl-in h3 { padding-inline-end: 40px; }
+.dl-close { position: absolute; top: 14px; inset-inline-end: 14px; width: 36px; height: 36px; border: none; border-radius: 50%;
+  background: transparent; color: var(--muted); font-size: 20px; line-height: 1; cursor: pointer; display: grid; place-items: center; }
+.dl-close:hover { background: var(--rule); color: var(--ink); }
+.dl-close:focus-visible { outline: 2px solid var(--green); }
 .dl-in h3 { font-size: 24px; }
 .dl-in p { margin: 0; color: var(--muted); font-size: 15.5px; }
 .dl-in label.f { display: grid; gap: 6px; font-weight: 600; font-size: 14px; }
@@ -330,7 +335,7 @@ dialog.dl::backdrop { background: rgba(10, 18, 24, .55); }
         <div class="r-row"><span><i class="dot" style="background:var(--pdf)"></i><span data-ar="GPDF — محرر PDF">GPDF — PDF editor</span></span><span class="z">0.00</span></div>
         <div class="r-row"><span data-ar="الاشتراك الشهري">Monthly subscription</span><span class="z" data-ar="لا يوجد">none</span></div>
         <div class="r-row"><span data-ar="التحديثات">Updates</span><span class="z" data-ar="مجانية">free</span></div>
-        <div class="r-total"><b data-ar="المجموع">Total</b><span class="big">0.00</span></div>
+        <div class="r-total"><b data-ar="المجموع">Total</b><span class="big" data-ar="مجاناً">FREE</span></div>
         <div class="r-foot" data-ar="اليوم، وغداً، وكل سنة.">Today, tomorrow and every year after.</div>
       </div>
     </div>
@@ -583,6 +588,7 @@ dialog.dl::backdrop { background: rgba(10, 18, 24, .55); }
 
 <dialog class="dl" id="dlDialog" aria-labelledby="dlTitle">
   <form class="dl-in" id="dlForm" method="dialog">
+    <button class="dl-close" type="button" id="dlClose" aria-label="Close" title="Close">✕</button>
     <h3 id="dlTitle" data-ar="تحميلك مجاني 🎁">Your download is free 🎁</h3>
     <p data-ar="هل تريد أن نخبرك بالإصدارات الجديدة؟ اكتب بريدك — <b>هذا اختياري</b>.">Would you like to hear about new versions? Leave your email — <b>this is optional</b>.</p>
     <label class="f"><span data-ar="البريد الإلكتروني (اختياري)">Email (optional)</span><input type="email" id="dlEmail" autocomplete="email" placeholder="name@example.com"></label>
@@ -590,9 +596,8 @@ dialog.dl::backdrop { background: rgba(10, 18, 24, .55); }
     <div class="hp" aria-hidden="true"><input type="text" id="dlWebsite" tabindex="-1" autocomplete="off"></div>
     <div class="row">
       <button class="btn btn-main" type="submit" id="dlGo" data-ar="⬇ ابدأ التحميل">⬇ Start download</button>
-      <button class="skip" type="button" id="dlSkip" data-ar="تحميل بدون بريد">Download without email</button>
     </div>
-    <p class="small" data-ar="لا نبيع أو نشارك بريدك أبداً. انظر قسم الخصوصية.">We never sell or share your email. See <a href="#privacy">Privacy</a>.</p>
+    <p class="small" data-ar="لا نبيع أو نشارك بريدك أبداً. انظر قسم &lt;a href=&quot;#privacy&quot;&gt;الخصوصية&lt;/a&gt;.">We never sell or share your email. See <a href="#privacy">Privacy</a>.</p>
   </form>
 </dialog>
 
@@ -660,6 +665,7 @@ document.querySelectorAll(".dl-setup, .dl-zip").forEach(a => a.addEventListener(
   if (!dlg.showModal) return;          // very old browser: just download
   e.preventDefault();
   dlHref = a.href;
+  document.getElementById("dlUpdates").checked = false;
   dlg.showModal();
   document.getElementById("dlEmail").focus();
 }));
@@ -667,9 +673,15 @@ document.getElementById("dlForm").addEventListener("submit", e => {
   const em = document.getElementById("dlEmail");
   if (em.value.trim() && !em.checkValidity()) { e.preventDefault(); em.reportValidity(); return; }
   e.preventDefault();
-  startDownload(true);
+  startDownload(em.value.trim() !== "");
 });
-document.getElementById("dlSkip").addEventListener("click", () => startDownload(false));
+// close the box: ✕ button, Esc key (built into <dialog>), or a click on the dark area outside
+document.getElementById("dlClose").addEventListener("click", () => dlg.close());
+dlg.addEventListener("click", e => { if (e.target === dlg) dlg.close(); });
+document.getElementById("dlUpdates").addEventListener("change", e => {
+  const em = document.getElementById("dlEmail");
+  if (e.target.checked && !em.value.trim()) em.focus();
+});
 document.getElementById("dlEmail").addEventListener("input", e => {
   const u = document.getElementById("dlUpdates");
   if (!e.target.value.trim()) u.checked = false;
